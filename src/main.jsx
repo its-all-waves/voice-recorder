@@ -8,5 +8,6 @@ import HandRolledRecorder from './HandRolledRecorder.jsx'
 
 createRoot(document.getElementById('root')).render(
     // <ReactMediaRecorderExample />
-    <HandRolledRecorder />
+    // <HandRolledRecorder />
+    <App /> 
 )

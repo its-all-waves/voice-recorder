@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState, useReducer } from "react"
 import Peakmeter from "web-audio-peakmeter-react"
 
 import './HandRolledRecorder.css'
@@ -6,17 +6,9 @@ import './HandRolledRecorder.css'
 const audioCtx = new AudioContext()
 const output = audioCtx.destination
 
-// const MAX_GAIN = 0.9
-// const gainNode = audioCtx.createGain()
-// gainNode.connect(output)
-
-// const oscNode = audioCtx.createOscillator()
-// oscNode.type = "sine"
-// oscNode.frequency.value = 440
-
-// oscNode.connect(gainNode)
-// gainNode.gain.value = 0
-// oscNode.start()
+const gainNode = audioCtx.createGain()
+gainNode.gain.value = 0
+gainNode.connect(output)
 
 /** @type {MediaRecorder?} */
 let recorder = null
@@ -32,33 +24,103 @@ const styles = {
     recordBtn: {
         background: 'darkred',
     },
+    recBtnPaused: {
+        animation: 'pulsate steps(1, end) 2s infinite',
+    },
     stopBtn: {
         animation: 'pulsate ease-out 2s infinite',
+    },
+}
+
+const STATE = Object.freeze({
+    RECORDING: 'Recording',
+    PAUSED: 'Paused',
+    STOPPED: 'Stopped',
+    MUTED: 'Muted',
+})
+
+const ACTION = Object.freeze({
+    TURN_ON_MIC: 'Mic On',
+    PRESS_RECORD: 'Record',
+    PRESS_PAUSE: 'Pause',
+})
+
+function reducer(state, action) {
+    const { state: recState } = state
+    let newState = {}
+    switch (action.type) {
+        case ACTION.PRESS_RECORD:
+            // prevent loss of record stream while paused
+            if (recState === STATE.PAUSED) return state
+            toggleRecording()
+            newState = {
+                state: recState === STATE.STOPPED
+                    ? STATE.RECORDING
+                    : STATE.STOPPED
+            }
+            break
+        case ACTION.PRESS_PAUSE:
+            togglePause()
+            newState = { state: recState === STATE.PAUSED
+                ? STATE.RECORDING
+                : STATE.PAUSED
+            }
+            break
+    }
+    return { ...state, ...newState }
+
+    function toggleRecording() {
+        if (recState === STATE.RECORDING) {
+            recorder.stop()
+            return
+        }
+        recorder.start()
+    }
+    
+    function togglePause() {
+        if (recState === STATE.PAUSED) {
+            recorder.resume()
+            return
+        }
+        recorder.pause()
     }
 }
 
+
+
 export default function HandRolledRecorder() {
+    // const [state, updateState] = useContext(RecStateContext)
+    const [recState_, updateRecState] = useReducer(reducer, {
+        state: STATE.STOPPED
+    })
 
-    const [isMuted, setIsMuted] = useState(true)
-
-    /** @type {[audioStream: MediaStream, _]} */
+    /** @type {[MediaStream, _]} */
     const [micStream, setMicStream] = useState(null)
-    const [isMicrophoneOn, setIsMicrophoneOn] = useState(false)
-    const [isRecording, setIsRecording] = useState(false)
+    /** @type {[MediaStreamAudioSourceNode, _]} */
     const [micStreamSrcNode, setMicStreamSrcNode] = useState(null)
+    /** @type {[MediaStreamAudioSourceNode, _]} */
     const [meterInputSrcNode, setMeterInputSrcNode] = useState(null)
+
     const [recordedBlob, setRecordedBlob] = useState(null)
 
-    /** @type {{ current: HTMLAudioElement | null }} */
+    // flags
+    const [isMicrophoneOn, setIsMicrophoneOn] = useState(false)
+    const [isMuted, setIsMuted] = useState(true)
+
+    /** @type {{ current: HTMLAudioElement? }} */
     const audioElem = useRef()
 
     useEffect(() => {
         if (micStream) {
             // create 2 separate stream sources from the mic stream
-            setMicStreamSrcNode(audioCtx.createMediaStreamSource(micStream))
+            const micStreamNode = audioCtx.createMediaStreamSource(micStream)
+            setMicStreamSrcNode(micStreamNode)
+            micStreamNode.connect(gainNode)
+            // because we want to control the meter input separately...
             setMeterInputSrcNode(audioCtx.createMediaStreamSource(micStream))
             initRecorder(micStream)
         } else {
+            micStreamSrcNode?.disconnect(gainNode)
             setMicStreamSrcNode(null)
             setMeterInputSrcNode(null)
             recorder = null
@@ -71,6 +133,11 @@ export default function HandRolledRecorder() {
     //     console.log('is recording:', isRecording)
     // }, [isMicTrackArmed, isRecording])
 
+    const { state: recState } = recState_
+    const isRecording = recState === STATE.RECORDING
+    const isPaused = recState === STATE.PAUSED
+    const isStopped = recState === STATE.STOPPED
+
     return (
         <div
             style={{
@@ -81,59 +148,69 @@ export default function HandRolledRecorder() {
                 style={{ margin: 0 }}
             >{isRecording ? 'Recording' : 'Stopped'}</h3>
             <div>
-
                 <button
-                    id="arm-mic-btn"
+                    id="mic-on-btn"
+                    disabled={isRecording || isPaused}
                     style={
                         { background: isMicrophoneOn ? 'green' : '' }
                     }
-                    onClick={async () => await toggleMicOn()}
+                    onClick={async () => {
+                        if (isRecording || isPaused) return
+                        await toggleMicOn()
+                    }}
                 >
                     Mic On
                 </button>
 
-                <button
-                    id="record-stop-btn"
-                    style={recordButtonStyle()}
-                    disabled={!isMicrophoneOn}
-                    onClick={async () => {
-                        if (isRecording) {
-                            // stop recording
-                            recorder.stop()
-                            // setIsMicrophoneOn(false)
-                            setIsRecording(false)
-                            return
-                        }
-                        // start recording
-                        recorder.start()
-                        setIsRecording(true)
-                    }}
-                >
-                    {isRecording
-                        ? 'Stop'
-                        : 'Record'}
-                </button>
+                <div style={{ display: 'inline-block' }}>
+                    <button
+                        id="record-btn"
+                        style={recordButtonStyle()}
+                        disabled={!isMicrophoneOn}
+                        onClick={(event) => {
+                            event.target.blur()  // prevent accidental stop 
+                            updateRecState({
+                                type: ACTION.PRESS_RECORD,
+                            })
+                        }}
+            >
+                        {isPaused
+                            ? 'Paused'
+                            :isRecording 
+                                ? 'Stop'
+                                : 'Record'}
+                    </button>
+
+                    {(isRecording || isPaused) &&
+                        <button
+                            id="pause-btn"
+                            onClick={() => {
+                                updateRecState({
+                                    type: ACTION.PRESS_PAUSE,
+                                })
+                            }}
+                        >
+                            {isPaused ? 'Resume' : 'Pause'}
+                        </button>}
+                </div>
 
                 <button
-                    id="mute-button"
+                    id="mute-btn"
                     disabled={!isMicrophoneOn}
                     onClick={() => {
                         if (!micStreamSrcNode) return
-                        isMuted
-                            ? micStreamSrcNode.connect(output)
-                            : micStreamSrcNode.disconnect(output)
-                        setIsMuted(!isMuted)
+                        toggleMute()
                     }}
                 >
-                    {isMuted ? 'Listen' : 'Mute'}
+                    {isMuted ? 'Monitor Mic' : 'Mute Mic'}
                 </button>
             </div>
 
             <div
-                style={{ 
-                    margin: '-5px', 
+                style={{
+                    margin: '-5px',
                     outline: isRecording && '2px solid red',
-                    animation: isRecording && 'pulsate ease-out 2s infinite' 
+                    animation: isRecording && 'pulsate ease-out 2s infinite'
                 }}
             >
                 {meterInputSrcNode &&  // render a working meter
@@ -153,11 +230,10 @@ export default function HandRolledRecorder() {
                     />}
             </div>
 
-
             <audio
                 ref={audioElem}
                 style={{
-                    opacity: recordedBlob && !isRecording ? 1 : 0,
+                    opacity: recordedBlob && isStopped ? 1 : 0,
                     transition: 'opacity 0.5s',
                 }}
                 src=""
@@ -167,26 +243,15 @@ export default function HandRolledRecorder() {
     )
 
     function recordButtonStyle() {
-        let dynBtnStyle
-        if (isRecording) {
+        let dynBtnStyle = {}
+        if (isPaused) {
+            dynBtnStyle = styles.recBtnPaused
+        } else if (isRecording) {
             dynBtnStyle = styles.stopBtn
         } else if (isMicrophoneOn) {
             dynBtnStyle = styles.recordBtn
         }
         return { ...styles.mainBtn, ...dynBtnStyle }
-    }
-
-    async function toggleMicOn() {
-        if (isMicrophoneOn) {
-            // turn it off
-            setMicStream(null)
-            setIsMicrophoneOn(false)
-            return
-        }
-        // turn it on
-        if (audioCtx.state === "suspended") await audioCtx.resume()
-        setMicStream(await getMicrophoneStream())
-        setIsMicrophoneOn(true)
     }
 
     function initRecorder(stream) {
@@ -208,15 +273,28 @@ export default function HandRolledRecorder() {
         }
     }
 
+    async function toggleMicOn() {
+        setIsMicrophoneOn(!isMicrophoneOn)
+        if (isMicrophoneOn) {
+            // turn it off
+            setMicStream(null)
+            return
+        }
+        // turn it on
+        if (audioCtx.state === "suspended") await audioCtx.resume()
+        setMicStream(await getMicrophoneStream())
+    }
+
     function toggleMute() {
         const MUTE_RAMP_SEC = 0.05
         const UNMUTE_RAMP_SEC = MUTE_RAMP_SEC
+        setIsMuted(!isMuted)
         if (gainNode.gain.value === 0) {
-            gainNode.gain.linearRampToValueAtTime(MAX_GAIN, audioCtx.currentTime + UNMUTE_RAMP_SEC)
-        } else {
-            gainNode.gain.linearRampToValueAtTime(0.00000001, audioCtx.currentTime + MUTE_RAMP_SEC)
-            gainNode.gain.setValueAtTime(0, audioCtx.currentTime + MUTE_RAMP_SEC + 0.01)
+            gainNode.gain.linearRampToValueAtTime(1, audioCtx.currentTime + UNMUTE_RAMP_SEC)
+            return
         }
+        gainNode.gain.linearRampToValueAtTime(0.00000001, audioCtx.currentTime + MUTE_RAMP_SEC)
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime + MUTE_RAMP_SEC + 0.01)
     }
 }
 

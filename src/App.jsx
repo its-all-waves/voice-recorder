@@ -1,16 +1,9 @@
 import { useState } from 'react'
 import './App.css'
+import HandRolledRecorder from './HandRolledRecorder'
 
-function App() {
-    const [count, setCount] = useState(0)
-
+export default function App() {
     return (
-        <>
-            <div>
-                App
-            </div>
-        </>
+        <HandRolledRecorder />
     )
 }
-
-export default App
