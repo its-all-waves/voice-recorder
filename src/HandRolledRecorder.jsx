@@ -47,9 +47,25 @@ export default function HandRolledRecorder() {
     const [isMicrophoneOn, setIsMicrophoneOn] = useState(false)
     const [isRecording, setIsRecording] = useState(false)
     const [micStreamSrcNode, setMicStreamSrcNode] = useState(null)
-    const [meterInputSrcNode, setMeterInputSrcNode] = useState(null)
+    const [meterInputSrcNode, setMeterInputSrcNode] = useState(
+        // new ConstantSourceNode(audioCtx)
+        null
+    )
 
     const audioElem = useRef()
+
+    useEffect(() => {
+        if (micStream) {
+            // create 2 separate stream sources from the mic stream
+            setMicStreamSrcNode(audioCtx.createMediaStreamSource(micStream))
+            setMeterInputSrcNode(audioCtx.createMediaStreamSource(micStream))
+            initRecorder(micStream)
+        } else {
+            setMicStreamSrcNode(null)
+            setMeterInputSrcNode(null)
+            recorder = null
+        }
+    }, [micStream])
 
     // DEBUG
     // useEffect(() => {
@@ -102,7 +118,9 @@ export default function HandRolledRecorder() {
 
                 <button
                     id="mute-button"
+                    disabled={!isMicrophoneOn}
                     onClick={() => {
+                        if (!micStreamSrcNode) return
                         isMuted
                             ? micStreamSrcNode.connect(output)
                             : micStreamSrcNode.disconnect(output)
@@ -113,17 +131,30 @@ export default function HandRolledRecorder() {
                 </button>
             </div>
 
-
-            {isMicrophoneOn &&
-                <div
-                    style={{ margin: '-5px' }}
-                >
+            <div
+                style={{ 
+                    margin: '-5px', 
+                    outline: isRecording && '2px solid red',
+                    animation: isRecording && 'pulsate ease-out 2s infinite' 
+                }}
+            >
+                {meterInputSrcNode &&  // render a working meter
                     <Peakmeter
                         audioCtx={audioCtx}
-                        sourceNodes={[micStreamSrcNode]}
+                        sourceNodes={[meterInputSrcNode]}
                         channels={1}
                     />
-                </div>}
+                    // NOTE: couldn't show an inactive meter without splitting
+                    // this into two predicates
+                }
+                {!meterInputSrcNode &&  // render an inactive meter
+                    <Peakmeter
+                        audioCtx={audioCtx}
+                        sourceNodes={[new ConstantSourceNode(audioCtx)]}
+                        channels={1}
+                    />}
+            </div>
+
 
             <audio
                 ref={audioElem}
@@ -152,9 +183,7 @@ export default function HandRolledRecorder() {
         }
         // turn it on
         if (audioCtx.state === "suspended") await audioCtx.resume()
-        const microphoneStream = await getMicrophoneStream()
-        setMicStream(microphoneStream)
-        setMicStreamSrcNode(audioCtx.createMediaStreamSource(microphoneStream))
+        setMicStream(await getMicrophoneStream())
         setIsMicrophoneOn(true)
     }
 

@@ -1,8 +1,10 @@
 @keyframes pulsate {
 	0%, 100% {
 		background-color: red;
+		outline-color: red;
 	}
 	50% {
 		background-color: darkred;
+		outline-color: darkred;
 	}
 }
