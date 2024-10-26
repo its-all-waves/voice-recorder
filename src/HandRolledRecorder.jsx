@@ -25,7 +25,6 @@ let recordedChunks = []
 /** @type {Object<string, React.CSSProperties>} */
 const styles = {
     mainBtn: {
-        // margin: '1rem',
     },
     armMicBtn: {
         background: 'green',
@@ -47,11 +46,10 @@ export default function HandRolledRecorder() {
     const [isMicrophoneOn, setIsMicrophoneOn] = useState(false)
     const [isRecording, setIsRecording] = useState(false)
     const [micStreamSrcNode, setMicStreamSrcNode] = useState(null)
-    const [meterInputSrcNode, setMeterInputSrcNode] = useState(
-        // new ConstantSourceNode(audioCtx)
-        null
-    )
+    const [meterInputSrcNode, setMeterInputSrcNode] = useState(null)
+    const [recordedBlob, setRecordedBlob] = useState(null)
 
+    /** @type {{ current: HTMLAudioElement | null }} */
     const audioElem = useRef()
 
     useEffect(() => {
@@ -158,6 +156,10 @@ export default function HandRolledRecorder() {
 
             <audio
                 ref={audioElem}
+                style={{
+                    opacity: recordedBlob && !isRecording ? 1 : 0,
+                    transition: 'opacity 0.5s',
+                }}
                 src=""
                 controls
             />
@@ -194,6 +196,7 @@ export default function HandRolledRecorder() {
         }
         recorder.onstop = function () {
             const blob = new Blob(recordedChunks, { type: 'audio/webm' })
+            setRecordedBlob(blob)
             recordedChunks = []
             const blobUrl = URL.createObjectURL(blob)
             audioElem.current.src = blobUrl
