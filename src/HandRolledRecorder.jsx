@@ -61,9 +61,10 @@ function reducer(state, action) {
             break
         case ACTION.PRESS_PAUSE:
             togglePause()
-            newState = { state: recState === STATE.PAUSED
-                ? STATE.RECORDING
-                : STATE.PAUSED
+            newState = {
+                state: recState === STATE.PAUSED
+                    ? STATE.RECORDING
+                    : STATE.PAUSED
             }
             break
     }
@@ -76,7 +77,7 @@ function reducer(state, action) {
         }
         recorder.start()
     }
-    
+
     function togglePause() {
         if (recState === STATE.PAUSED) {
             recorder.resume()
@@ -87,9 +88,18 @@ function reducer(state, action) {
 }
 
 
+/** @param {{ format: 'mp3' | 'webm' }} */
+export default function HandRolledRecorder({
+    format = 'webm',
+    audioConstraints = {
+        autoGainControl: true,
+        voiceIsolation: false,
+        echoCancellation: false,
+        noiseSuppression: false,
+        channelCount: 1,
+    }
 
-export default function HandRolledRecorder() {
-    // const [state, updateState] = useContext(RecStateContext)
+}) {
     const [recState_, updateRecState] = useReducer(reducer, {
         state: STATE.STOPPED
     })
@@ -126,13 +136,7 @@ export default function HandRolledRecorder() {
             recorder = null
         }
     }, [micStream])
-
-    // DEBUG
-    // useEffect(() => {
-    //     console.log('mic track armed:', isMicTrackArmed)
-    //     console.log('is recording:', isRecording)
-    // }, [isMicTrackArmed, isRecording])
-
+    
     const { state: recState } = recState_
     const isRecording = recState === STATE.RECORDING
     const isPaused = recState === STATE.PAUSED
@@ -173,10 +177,10 @@ export default function HandRolledRecorder() {
                                 type: ACTION.PRESS_RECORD,
                             })
                         }}
-            >
+                    >
                         {isPaused
                             ? 'Paused'
-                            :isRecording 
+                            : isRecording
                                 ? 'Stop'
                                 : 'Record'}
                     </button>
@@ -260,7 +264,7 @@ export default function HandRolledRecorder() {
             recordedChunks.push(event.data)
         }
         recorder.onstop = function () {
-            const blob = new Blob(recordedChunks, { type: 'audio/webm' })
+            const blob = new Blob(recordedChunks, { type: 'audio/' + format })
             setRecordedBlob(blob)
             recordedChunks = []
             const blobUrl = URL.createObjectURL(blob)
@@ -268,7 +272,7 @@ export default function HandRolledRecorder() {
             // automatically download the file
             const downloadLink = document.createElement('a')
             downloadLink.href = blobUrl
-            downloadLink.download = 'recording.webm'
+            downloadLink.download = 'recording.' + format
             downloadLink.click()
         }
     }
@@ -282,7 +286,7 @@ export default function HandRolledRecorder() {
         }
         // turn it on
         if (audioCtx.state === "suspended") await audioCtx.resume()
-        setMicStream(await getMicrophoneStream())
+        setMicStream(await getMicrophoneStream(audioConstraints))
     }
 
     function toggleMute() {
@@ -298,19 +302,10 @@ export default function HandRolledRecorder() {
     }
 }
 
-async function getMicrophoneStream() {
-    const CONSTRAINTS = {
-        audio: {
-            autoGainControl: true,
-            voiceIsolation: false,
-            echoCancellation: false,
-            noiseSuppression: false,
-            channelCount: 1,
-        },
-        video: false,
-    }
+async function getMicrophoneStream(audioConstraints) {
+    const constraints = { audio: audioConstraints, video: false }
     try {
-        const stream = await navigator.mediaDevices.getUserMedia(CONSTRAINTS)
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
         const tracks = stream.getTracks()
         if (tracks.length !== 1) {
             throw new Error(`Expected 1 track. Captured ${tracks.length}`)
