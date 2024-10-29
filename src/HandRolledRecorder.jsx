@@ -13,6 +13,7 @@ gainNode.connect(output)
 /** @type {MediaRecorder?} */
 let recorder = null
 let recordedChunks = []
+let recInterval = null
 
 /** @type {Object<string, React.CSSProperties>} */
 const styles = {
@@ -87,7 +88,6 @@ function reducer(state, action) {
     }
 }
 
-
 /** @param {{ format: 'mp3' | 'webm' }} */
 export default function HandRolledRecorder({
     format = 'webm',
@@ -110,6 +110,9 @@ export default function HandRolledRecorder({
     const [micStreamSrcNode, setMicStreamSrcNode] = useState(null)
     /** @type {[MediaStreamAudioSourceNode, _]} */
     const [meterInputSrcNode, setMeterInputSrcNode] = useState(null)
+
+    const [recCounter, setRecCounter] = useState(0)
+    const min = recCounter % 60
 
     const [recordedBlob, setRecordedBlob] = useState(null)
 
@@ -136,7 +139,7 @@ export default function HandRolledRecorder({
             recorder = null
         }
     }, [micStream])
-    
+
     const { state: recState } = recState_
     const isRecording = recState === STATE.RECORDING
     const isPaused = recState === STATE.PAUSED
@@ -151,6 +154,9 @@ export default function HandRolledRecorder({
             <h3
                 style={{ margin: 0 }}
             >{isRecording ? 'Recording' : 'Stopped'}</h3>
+            <div>
+                {String(Math.floor(recCounter / 60)).padStart(2, 0)}:{String(recCounter % 60).padStart(2, 0)}
+            </div>
             <div>
                 <button
                     id="mic-on-btn"
@@ -263,7 +269,14 @@ export default function HandRolledRecorder({
         recorder.ondataavailable = function (event) {
             recordedChunks.push(event.data)
         }
-        recorder.onstop = function () {
+        recorder.onstart = recorder.onresume = () => {
+            recInterval = setInterval(() => {
+                setRecCounter(prev => prev + 1)
+            }, 1000)
+        }
+        recorder.onpause = () => clearInterval(recInterval)
+        recorder.onstop = () => {
+            clearInterval(recInterval)
             const blob = new Blob(recordedChunks, { type: 'audio/' + format })
             setRecordedBlob(blob)
             recordedChunks = []

@@ -1,0 +1,51 @@
+.recorder-controls {
+	/* min-width: 10ch;
+	max-width: 60ch; */
+	display: flex;
+}
+
+button {
+	--btn-shadow-height: 0.2rem;
+	position: relative;
+	border: none;
+	border-radius: 50%;
+	width: 6ch;
+	height: 6ch;
+	background: black;
+	filter: drop-shadow(0rem var(--btn-shadow-height) 0rem black);
+
+	img {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		filter: drop-shadow(0 0.1rem 0 black);
+	}
+}
+
+button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+button:disabled:active {
+	pointer-events: none;
+	transform: none;
+	filter: drop-shadow(0rem var(--btn-shadow-height) 0rem black);
+}
+button:disabled,
+button:disabled:active {
+	img {
+		filter: none;
+	}
+}
+
+button:active,
+button:focus {
+	border: none;
+	outline: none;
+}
+
+button:active {
+	filter: none;
+	transform: translateY(var(--btn-shadow-height));
+}

@@ -8,8 +8,8 @@ import { useRef } from "react"
 import { useReactMediaRecorder } from "react-media-recorder"
 import { WebAudioPeakMeter } from "web-audio-peak-meter"
 
-import micImg from './assets/mic.circle.fill.svg'
-import stopImg from './assets/stop.circle.fill.svg'
+import micImg from './assets/mic.white.svg'
+import stopImg from './assets/stop.white.svg'
 
 const confirmModalStyles = {
     position: 'fixed',

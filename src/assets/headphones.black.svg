@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 26.0.2, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 300 300" style="enable-background:new 0 0 300 300;" xml:space="preserve">
+<style type="text/css">
+	.st0{clip-path:url(#SVGID_00000002372829290763578430000002142352646579698071_);}
+	.st1{fill:none;stroke:#000000;stroke-width:25.0961;stroke-linecap:round;stroke-miterlimit:10;}
+	.st2{clip-path:url(#SVGID_00000106832599766252136690000001537211138984561542_);}
+</style>
+<g>
+	<g id="_x3C_Mirror_Repeat_x3E__00000145769848744109754530000007825536187494124732_">
+		<g>
+			<defs>
+				<rect id="SVGID_1_" x="0.3" y="0.3" width="161.2" height="299.7"/>
+			</defs>
+			<clipPath id="SVGID_00000152241116894557786210000012409479246371730361_">
+				<use xlink:href="#SVGID_1_"  style="overflow:visible;"/>
+			</clipPath>
+			<g style="clip-path:url(#SVGID_00000152241116894557786210000012409479246371730361_);">
+				<path class="st1" d="M26.9,249.4c-5.4-15.6-14-74.4-14-92C12.9,77.5,73.8,12.8,149,12.8"/>
+				<path d="M73.3,299.2L73.3,299.2c-20.3,4.3-40.3-8.9-44.6-29.1l-14.2-67.9c-4.3-20.3,8.9-40.3,29.1-44.6l0,0
+					c20.3-4.3,40.3,8.9,44.6,29.1l14.2,67.9C106.7,274.9,93.6,294.9,73.3,299.2z"/>
+			</g>
+		</g>
+	</g>
+	<g id="_x3C_Mirror_Repeat_x3E__00000136386015045565171850000003251111502146922664_">
+		<g>
+			<defs>
+				<rect id="SVGID_00000015319602508199440120000001047099668864998554_" x="138.7" y="0.3" width="161.2" height="299.7"/>
+			</defs>
+			<clipPath id="SVGID_00000058562005860861912180000001056377533259583668_">
+				<use xlink:href="#SVGID_00000015319602508199440120000001047099668864998554_"  style="overflow:visible;"/>
+			</clipPath>
+			<g style="clip-path:url(#SVGID_00000058562005860861912180000001056377533259583668_);">
+				<path class="st1" d="M273.4,249.4c5.4-15.6,14-74.4,14-92c0-79.8-60.9-144.5-136.1-144.5"/>
+				<path d="M227,299.2L227,299.2c20.3,4.3,40.3-8.9,44.6-29.1l14.2-67.9c4.3-20.3-8.9-40.3-29.1-44.6l0,0
+					c-20.3-4.3-40.3,8.9-44.6,29.1l-14.2,67.9C193.6,274.9,206.7,294.9,227,299.2z"/>
+			</g>
+		</g>
+	</g>
+</g>
+</svg>

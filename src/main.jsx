@@ -5,9 +5,11 @@ import './index.css'
 
 import ReactMediaRecorderExample from './ReactMediaRecorder.jsx'
 import HandRolledRecorder from './HandRolledRecorder.jsx'
+import RecorderControls from './RecorderControls.jsx'
 
 createRoot(document.getElementById('root')).render(
     // <ReactMediaRecorderExample />
     // <HandRolledRecorder />
-    <App /> 
+    <RecorderControls />
+    // <App /> 
 )
