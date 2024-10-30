@@ -6,7 +6,6 @@ import recordIcon from './assets/record.white.svg'
 import pauseIcon from './assets/pause.white.svg'
 import stopIcon from './assets/stop.white.svg'
 import monitorIcon from './assets/headphones.white.svg'
-import { useState } from 'react'
 import { createContext } from 'react'
 import { useContext } from 'react'
 
@@ -29,20 +28,6 @@ export default function RecorderControls({
     onClickStop,
     onClickMonitor,
 }) {
-    // const [recState, setRecState] = useState('STOPPED')
-    // const [isMicOn, setIsMicOn] = useState(false)
-    // const [isMonitoring, setIsMonitoring] = useState(false)
-
-    // function onClickRecord() {
-    //     setRecState(recState === "RECORDING" ? "PAUSED" : "RECORDING")
-    // }
-    // function onClickStop() {
-    //     (recState === "RECORDING" || recState === "PAUSED") 
-    //         && setRecState("STOPPED")
-    // }
-    // function onClickMic() { setIsMicOn(!isMicOn) }
-    // function onClickMonitor() { setIsMonitoring(!isMonitoring) }
-
     return (
         <div className="recorder-controls">
             <AudioControlsCtx.Provider

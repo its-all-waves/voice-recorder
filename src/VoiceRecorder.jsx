@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useReducer } from 'react'
+import React, { useRef, useReducer } from 'react'
 import Peakmeter from 'web-audio-peakmeter-react'
 
 import RecorderControls from './RecorderControls'
@@ -16,24 +16,6 @@ gainNode.connect(output)
 let recorder = null
 let recordedChunks = []
 let recInterval = null
-
-/** @type {Object<string, React.CSSProperties>} */
-const styles = {
-    mainBtn: {
-    },
-    armMicBtn: {
-        background: 'green',
-    },
-    recordBtn: {
-        background: 'darkred',
-    },
-    recBtnPaused: {
-        animation: 'pulsate steps(1, end) 2s infinite',
-    },
-    stopBtn: {
-        animation: 'pulsate ease-out 2s infinite',
-    },
-}
 
 /** @typedef {'STOPPED' | 'RECORDING' | 'PAUSED'} RecState */
 
@@ -173,7 +155,7 @@ const MIME_TYPES = {
  * */
 
 /** @param {{ audioFormat: 'webm', audioConstraints: AudioTrackConstraints }} */
-export default function HandRolledRecorder({
+export default function VoiceRecorder({
     audioFormat = 'webm',
     audioConstraints = {
         autoGainControl: true,
@@ -203,7 +185,6 @@ export default function HandRolledRecorder({
         recordDurationSec,
     } = state
     const isRecording = recState === 'RECORDING'
-    const isPaused = recState === 'PAUSED'
     const isStopped = recState === 'STOPPED'
 
     /** @type {{ current: HTMLAudioElement? }} */

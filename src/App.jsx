@@ -1,8 +1,8 @@
 import './App.css'
-import HandRolledRecorder from './HandRolledRecorder'
+import VoiceRecorder from './VoiceRecorder'
 
 export default function App() {
     return (
-        <HandRolledRecorder />
+        <VoiceRecorder />
     )
 }
