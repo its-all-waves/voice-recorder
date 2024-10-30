@@ -10,6 +10,6 @@ import RecorderControls from './RecorderControls.jsx'
 createRoot(document.getElementById('root')).render(
     // <ReactMediaRecorderExample />
     // <HandRolledRecorder />
-    <RecorderControls />
-    // <App /> 
+    // <RecorderControls />
+    <App /> 
 )

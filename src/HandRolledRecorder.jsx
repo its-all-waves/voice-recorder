@@ -1,5 +1,7 @@
-import React, { useEffect, useRef, useState, useReducer } from "react"
-import Peakmeter from "web-audio-peakmeter-react"
+import React, { useEffect, useRef, useState, useReducer } from 'react'
+import Peakmeter from 'web-audio-peakmeter-react'
+
+import RecorderControls from './RecorderControls'
 
 import './HandRolledRecorder.css'
 
@@ -33,64 +35,116 @@ const styles = {
     },
 }
 
-const STATE = Object.freeze({
-    RECORDING: 'Recording',
-    PAUSED: 'Paused',
-    STOPPED: 'Stopped',
-    MUTED: 'Muted',
-})
+/** @typedef {'STOPPED' | 'RECORDING' | 'PAUSED'} RecState */
 
-const ACTION = Object.freeze({
-    TURN_ON_MIC: 'Mic On',
-    PRESS_RECORD: 'Record',
-    PRESS_PAUSE: 'Pause',
-})
+/** @typedef {'TOGGLED_MIC' | 'TOGGLED_RECORD' | 'PRESSED_STOP' | 'TOGGLED_MONITOR' | 'TOGGLED_MIC_STREAM'} AudioActionType */
 
+/** 
+ * @param {{ recState: RecState}} state 
+ * @param {{ type: AudioActionType, data: Object }} action
+ * */
 function reducer(state, action) {
-    const { state: recState } = state
+    const {
+        recState,
+        isMicOn,
+        isMonitoring,
+        micStreamSrcNode,
+        meterInputSrcNode,
+        recCounter,
+        recordedBlob,
+    } = state
+    const { data } = action
     let newState = {}
     switch (action.type) {
-        case ACTION.PRESS_RECORD:
-            // prevent loss of record stream while paused
-            if (recState === STATE.PAUSED) return state
-            toggleRecording()
-            newState = {
-                state: recState === STATE.STOPPED
-                    ? STATE.RECORDING
-                    : STATE.STOPPED
+        case 'TOGGLED_MIC':
+            // due to async nature of task, must be in useEffect
+            newState = { isMicOn: !isMicOn }
+            break
+        case 'TOGGLED_MIC_STREAM':
+            const { micStream, audioFormat } = data
+            if (micStream) {
+                newState.micStreamSrcNode =
+                    audioCtx.createMediaStreamSource(micStream)
+                newState.micStreamSrcNode.connect(gainNode)
+                // because we want to control the meter input separately...
+                newState.meterInputSrcNode =
+                    audioCtx.createMediaStreamSource(micStream)
+                // init recorder
+                recorder = new MediaRecorder(micStream)
+                recorder.ondataavailable = (event) => {
+                    recordedChunks.push(event.data)
+                }
+                recorder.onstart = recorder.onresume = () => {
+                    recInterval = setInterval(() => {
+                        state.recCounter = recCounter + 1
+                    }, 1000)
+                }
+                recorder.onpause = () => clearInterval(recInterval)
+                recorder.onstop = () => clearInterval(recInterval)
+            } else {
+                newState.micStream = null
+                micStreamSrcNode?.disconnect(gainNode)
+                newState.micStreamSrcNode = null
+                newState.meterInputSrcNode = null
+                recorder = null
             }
             break
-        case ACTION.PRESS_PAUSE:
-            togglePause()
-            newState = {
-                state: recState === STATE.PAUSED
-                    ? STATE.RECORDING
-                    : STATE.PAUSED
+        case 'TOGGLED_RECORD':
+            switch (recState) {
+                case 'STOPPED':
+                    recorder.start(500)
+                    newState = { recState: 'RECORDING' }
+                    break
+                case 'PAUSED':
+                    recorder.resume()
+                    newState = { recState: 'RECORDING' }
+                    break
+                case 'RECORDING':
+                    recorder.pause()
+                    newState = { recState: 'PAUSED' }
+                    break
             }
             break
-    }
-    return { ...state, ...newState }
-
-    function toggleRecording() {
-        if (recState === STATE.RECORDING) {
+        case 'PRESSED_STOP':
+            if (recState !== 'RECORDING' && recState !== 'PAUSED') break
             recorder.stop()
-            return
-        }
-        recorder.start()
+            newState = {
+                recState: 'STOPPED',
+                recordedBlob: new Blob(
+                    recordedChunks, { type: 'audio/' + data.audioFormat }
+                )
+            }
+            recordedChunks = []
+            break
+        case 'TOGGLED_MONITOR':
+            const MUTE_RAMP_SEC = 0.05
+            const UNMUTE_RAMP_SEC = MUTE_RAMP_SEC
+            newState = { isMonitoring: !isMonitoring }
+            if (gainNode.gain.value === 0) {
+                gainNode.gain.linearRampToValueAtTime(
+                    1, audioCtx.currentTime + UNMUTE_RAMP_SEC
+                )
+            } else {
+                gainNode.gain.linearRampToValueAtTime(
+                    0.00000001, audioCtx.currentTime + MUTE_RAMP_SEC
+                )
+                gainNode.gain.setValueAtTime(
+                    0, audioCtx.currentTime + MUTE_RAMP_SEC + 0.01
+                )
+            }
+            break
     }
+    const nextState = { ...state, ...newState }
+    return nextState
 
-    function togglePause() {
-        if (recState === STATE.PAUSED) {
-            recorder.resume()
-            return
-        }
-        recorder.pause()
-    }
 }
+
+
+
 
 /** @param {{ format: 'mp3' | 'webm' }} */
 export default function HandRolledRecorder({
-    format = 'webm',
+    audioFormat = 'webm',
     audioConstraints = {
         autoGainControl: true,
         voiceIsolation: false,
@@ -100,50 +154,79 @@ export default function HandRolledRecorder({
     }
 
 }) {
-    const [recState_, updateRecState] = useReducer(reducer, {
-        state: STATE.STOPPED
-    })
+    /** @type {[RecState, React.Dispatch<{ type: AudioActionType, data: Object }>]} */
+    const [state, updateState] = useReducer(reducer,
+        {   // initial state
+            recState: 'STOPPED',
+            isMicOn: false,
+            isMonitoring: false,
+            micStream: null,
+            micStreamSrcNode: null,
+            meterInputSrcNode: null,
+            recordedBlob: null,
+            recCounter: 0,
+        }
+    )
 
-    /** @type {[MediaStream, _]} */
-    const [micStream, setMicStream] = useState(null)
-    /** @type {[MediaStreamAudioSourceNode, _]} */
-    const [micStreamSrcNode, setMicStreamSrcNode] = useState(null)
-    /** @type {[MediaStreamAudioSourceNode, _]} */
-    const [meterInputSrcNode, setMeterInputSrcNode] = useState(null)
+    // const [recCounter, setRecCounter] = useState(0)
+    // const min = recCounter % 60
 
-    const [recCounter, setRecCounter] = useState(0)
-    const min = recCounter % 60
-
-    const [recordedBlob, setRecordedBlob] = useState(null)
-
-    // flags
-    const [isMicrophoneOn, setIsMicrophoneOn] = useState(false)
-    const [isMuted, setIsMuted] = useState(true)
+    const {
+        recState,
+        isMicOn,
+        isMonitoring,
+        micStream,
+        micStreamSrcNode,
+        meterInputSrcNode,
+        recordedBlob,
+        recCounter,
+    } = state
+    const isRecording = recState === 'RECORDING'
+    const isPaused = recState === 'PAUSED'
+    const isStopped = recState === 'STOPPED'
 
     /** @type {{ current: HTMLAudioElement? }} */
     const audioElem = useRef()
 
+    // if mic is on, set mic stream, 
+    // set mic + meter source nodes, 
+    // init recorder,
+    // else undo these
     useEffect(() => {
-        if (micStream) {
-            // create 2 separate stream sources from the mic stream
-            const micStreamNode = audioCtx.createMediaStreamSource(micStream)
-            setMicStreamSrcNode(micStreamNode)
-            micStreamNode.connect(gainNode)
-            // because we want to control the meter input separately...
-            setMeterInputSrcNode(audioCtx.createMediaStreamSource(micStream))
-            initRecorder(micStream)
-        } else {
-            micStreamSrcNode?.disconnect(gainNode)
-            setMicStreamSrcNode(null)
-            setMeterInputSrcNode(null)
-            recorder = null
-        }
-    }, [micStream])
+        (async () => {
+            if (isMicOn) {
+                // async code cannot run in reducer(), so do it here
+                if (audioCtx.state === 'suspended') await audioCtx.resume()
+                const micStream = await getMicrophoneStream(audioConstraints)
+                updateState({
+                    type: "TOGGLED_MIC_STREAM", data: { micStream, audioFormat }
+                })
+            } else {
+                updateState({
+                    type: "TOGGLED_MIC_STREAM", data: { micStream: null }
+                })
+            }
+        })()
+    }, [isMicOn])
 
-    const { state: recState } = recState_
-    const isRecording = recState === STATE.RECORDING
-    const isPaused = recState === STATE.PAUSED
-    const isStopped = recState === STATE.STOPPED
+    // update audio elem and auto download recording when recording exists
+    useEffect(() => {
+        if (recordedBlob) {
+            const blobUrl = URL.createObjectURL(recordedBlob)
+            audioElem.current.src = blobUrl
+            // automatically download recorded file on record stop
+            let downloadLink = document.createElement('a')
+            downloadLink.href = blobUrl
+            downloadLink.download = 'recording.' + audioFormat
+            downloadLink.click()
+            downloadLink = undefined  // let GC clean up the link
+        }
+    }, [recordedBlob])
+
+
+    useEffect(() => {
+        console.log('recorded blob:', recordedBlob)
+    }, [recordedBlob])
 
     return (
         <div
@@ -157,66 +240,19 @@ export default function HandRolledRecorder({
             <div>
                 {String(Math.floor(recCounter / 60)).padStart(2, 0)}:{String(recCounter % 60).padStart(2, 0)}
             </div>
-            <div>
-                <button
-                    id="mic-on-btn"
-                    disabled={isRecording || isPaused}
-                    style={
-                        { background: isMicrophoneOn ? 'green' : '' }
-                    }
-                    onClick={async () => {
-                        if (isRecording || isPaused) return
-                        await toggleMicOn()
-                    }}
-                >
-                    Mic On
-                </button>
 
-                <div style={{ display: 'inline-block' }}>
-                    <button
-                        id="record-btn"
-                        style={recordButtonStyle()}
-                        disabled={!isMicrophoneOn}
-                        onClick={(event) => {
-                            event.target.blur()  // prevent accidental stop 
-                            updateRecState({
-                                type: ACTION.PRESS_RECORD,
-                            })
-                        }}
-                    >
-                        {isPaused
-                            ? 'Paused'
-                            : isRecording
-                                ? 'Stop'
-                                : 'Record'}
-                    </button>
-
-                    {(isRecording || isPaused) &&
-                        <button
-                            id="pause-btn"
-                            onClick={() => {
-                                updateRecState({
-                                    type: ACTION.PRESS_PAUSE,
-                                })
-                            }}
-                        >
-                            {isPaused ? 'Resume' : 'Pause'}
-                        </button>}
-                </div>
-
-                <button
-                    id="mute-btn"
-                    disabled={!isMicrophoneOn}
-                    onClick={() => {
-                        if (!micStreamSrcNode) return
-                        toggleMute()
-                    }}
-                >
-                    {isMuted ? 'Monitor Mic' : 'Mute Mic'}
-                </button>
-            </div>
+            <RecorderControls
+                recState={recState}
+                isMicOn={isMicOn}
+                isMonitoring={isMonitoring}
+                onClickMic={toggleMicOn}
+                onClickMonitor={toggleMonitor}
+                onClickRecord={toggleRecordPause}
+                onClickStop={stopRecording}
+            />
 
             <div
+                id="meter-container"
                 style={{
                     margin: '-5px',
                     outline: isRecording && '2px solid red',
@@ -252,70 +288,26 @@ export default function HandRolledRecorder({
         </div>
     )
 
-    function recordButtonStyle() {
-        let dynBtnStyle = {}
-        if (isPaused) {
-            dynBtnStyle = styles.recBtnPaused
-        } else if (isRecording) {
-            dynBtnStyle = styles.stopBtn
-        } else if (isMicrophoneOn) {
-            dynBtnStyle = styles.recordBtn
-        }
-        return { ...styles.mainBtn, ...dynBtnStyle }
-    }
-
-    function initRecorder(stream) {
-        recorder = new MediaRecorder(stream)
-        recorder.ondataavailable = function (event) {
-            recordedChunks.push(event.data)
-        }
-        recorder.onstart = recorder.onresume = () => {
-            recInterval = setInterval(() => {
-                setRecCounter(prev => prev + 1)
-            }, 1000)
-        }
-        recorder.onpause = () => clearInterval(recInterval)
-        recorder.onstop = () => {
-            clearInterval(recInterval)
-            const blob = new Blob(recordedChunks, { type: 'audio/' + format })
-            setRecordedBlob(blob)
-            recordedChunks = []
-            const blobUrl = URL.createObjectURL(blob)
-            audioElem.current.src = blobUrl
-            // automatically download the file
-            const downloadLink = document.createElement('a')
-            downloadLink.href = blobUrl
-            downloadLink.download = 'recording.' + format
-            downloadLink.click()
-        }
-    }
-
     async function toggleMicOn() {
-        setIsMicrophoneOn(!isMicrophoneOn)
-        if (isMicrophoneOn) {
-            // turn it off
-            setMicStream(null)
-            return
-        }
-        // turn it on
-        if (audioCtx.state === "suspended") await audioCtx.resume()
-        setMicStream(await getMicrophoneStream(audioConstraints))
+        updateState({ type: 'TOGGLED_MIC' })
     }
 
-    function toggleMute() {
-        const MUTE_RAMP_SEC = 0.05
-        const UNMUTE_RAMP_SEC = MUTE_RAMP_SEC
-        setIsMuted(!isMuted)
-        if (gainNode.gain.value === 0) {
-            gainNode.gain.linearRampToValueAtTime(1, audioCtx.currentTime + UNMUTE_RAMP_SEC)
-            return
-        }
-        gainNode.gain.linearRampToValueAtTime(0.00000001, audioCtx.currentTime + MUTE_RAMP_SEC)
-        gainNode.gain.setValueAtTime(0, audioCtx.currentTime + MUTE_RAMP_SEC + 0.01)
+    function toggleRecordPause() {
+        updateState({ type: "TOGGLED_RECORD" })
+    }
+
+    function stopRecording() {
+        updateState({ type: "PRESSED_STOP", data: { audioFormat } })
+    }
+
+    function toggleMonitor() {
+        updateState({ type: "TOGGLED_MONITOR" })
     }
 }
 
 async function getMicrophoneStream(audioConstraints) {
+    /* ## AUDIO TRACK CONSTRAINTS (MEDIA TRACK CONSTRAINTS)
+    https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints#instance_properties_of_audio_tracks */
     const constraints = { audio: audioConstraints, video: false }
     try {
         const stream = await navigator.mediaDevices.getUserMedia(constraints)
@@ -331,10 +323,3 @@ async function getMicrophoneStream(audioConstraints) {
 
 
 
-/* 
-
-## AUDIO TRACK CONSTRAINTS (MEDIA TRACK CONSTRAINTS)
-https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints#instance_properties_of_audio_tracks
-
-
-*/

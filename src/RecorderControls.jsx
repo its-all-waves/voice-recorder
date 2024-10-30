@@ -19,29 +19,29 @@ import { useContext } from 'react'
 
 const AudioControlsCtx = createContext()
 
-/** @param {{ state: RecState }} */
+/** @param {{ recState: RecState, isMonitoring: boolean, isMicOn: boolean, onClickMic: VoidFunction, onClickRecord: VoidFunction, onClickStop: VoidFunction, onClickMonitor: VoidFunction }} */
 export default function RecorderControls({
-    // state = 'STOPPED',
-    // isMonitoring = false,
-    // isMicOn = false,
+    recState = 'STOPPED',
+    isMonitoring = false,
+    isMicOn = false,
     onClickMic,
     onClickRecord,
     onClickStop,
     onClickMonitor,
 }) {
-    const [recState, setRecState] = useState('STOPPED')
-    const [isMicOn, setIsMicOn] = useState(false)
-    const [isMonitoring, setIsMonitoring] = useState(false)
+    // const [recState, setRecState] = useState('STOPPED')
+    // const [isMicOn, setIsMicOn] = useState(false)
+    // const [isMonitoring, setIsMonitoring] = useState(false)
 
-    function onClickRecord() {
-        setRecState(recState === "RECORDING" ? "PAUSED" : "RECORDING")
-    }
-    function onClickStop() {
-        (recState === "RECORDING" || recState === "PAUSED") 
-            && setRecState("STOPPED")
-    }
-    function onClickMic() { setIsMicOn(!isMicOn) }
-    function onClickMonitor() { setIsMonitoring(!isMonitoring) }
+    // function onClickRecord() {
+    //     setRecState(recState === "RECORDING" ? "PAUSED" : "RECORDING")
+    // }
+    // function onClickStop() {
+    //     (recState === "RECORDING" || recState === "PAUSED") 
+    //         && setRecState("STOPPED")
+    // }
+    // function onClickMic() { setIsMicOn(!isMicOn) }
+    // function onClickMonitor() { setIsMonitoring(!isMonitoring) }
 
     return (
         <div className="recorder-controls">
@@ -95,20 +95,6 @@ function RecordPauseButton({ onClick }) {
 }
 
 /** @param {{ state: RecState }} */
-function PauseButton({ onClick }) {
-    const { state, isMicOn } = useContext(AudioControlsCtx)
-    return (
-        <AudioControl
-            type="PAUSE"
-            img={pauseIcon}
-            alt="Pause"
-            state={state}
-            onClick={onClick}
-        />
-    )
-}
-
-/** @param {{ state: RecState }} */
 function StopButton({ onClick }) {
     const { state, isMicOn } = useContext(AudioControlsCtx)
     return (
@@ -150,10 +136,6 @@ function AudioControl({
     style,
     disabled
 }) {
-    debugger
-    if (disabled) {
-        // style = { ...style, cursor: 'not-allowed', opacity: 0.5 }
-    }
     return (
         <button
             onClick={onClick}
