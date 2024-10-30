@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useReducer } from 'react'
+import React, { useEffect, useRef, useReducer } from 'react'
 import Peakmeter from 'web-audio-peakmeter-react'
 
 import RecorderControls from './RecorderControls'
@@ -51,7 +51,6 @@ function reducer(state, action) {
         micStream,
         micStreamSrcNode,
         meterInputSrcNode,
-        recordedBlob,
         recordDurationSec,
     } = state
     const { data } = action
@@ -62,7 +61,7 @@ function reducer(state, action) {
             newState = { isMicOn: !isMicOn }
             break
         case 'TOGGLED_MIC_STREAM':
-            const { micStream, audioFormat, updateState } = data
+            const { micStream, audioFormat, dispatch, audioElem } = data
             if (micStream) {
                 newState.micStreamSrcNode =
                     audioCtx.createMediaStreamSource(micStream)
@@ -71,17 +70,35 @@ function reducer(state, action) {
                 newState.meterInputSrcNode =
                     audioCtx.createMediaStreamSource(micStream)
                 // init recorder
-                recorder = new MediaRecorder(micStream)
+                recorder = new MediaRecorder(
+                    micStream, { mimeType: MIME_TYPES[audioFormat] }
+                )
                 recorder.ondataavailable = (event) => {
                     recordedChunks.push(event.data)
                 }
-                recorder.onstart = recorder.onresume = () => {
+                recorder.onstart = () => {
+                    recordedChunks = []
                     recInterval = setInterval(() => {
-                        updateState({ type: 'REC_COUNTER_TICKED' })
+                        dispatch({ type: 'REC_COUNTER_TICKED' })
+                    }, 1000)
+                }
+                recorder.onresume = () => {
+                    recInterval = setInterval(() => {
+                        dispatch({ type: 'REC_COUNTER_TICKED' })
                     }, 1000)
                 }
                 recorder.onpause = () => clearInterval(recInterval)
-                recorder.onstop = () => clearInterval(recInterval)
+                recorder.onstop = () => {
+                    clearInterval(recInterval)
+                    const blobUrl = URL.createObjectURL(new Blob(recordedChunks, { type: ""}))
+                    audioElem.src = blobUrl
+                    // automatically download recorded file on record stop
+                    let downloadLink = document.createElement('a')
+                    downloadLink.href = blobUrl
+                    downloadLink.download = 'recording.' + audioFormat
+                    downloadLink.click()
+                    downloadLink = undefined  // let GC clean up the link
+                }
             } else {
                 newState.micStream = null
                 micStreamSrcNode?.disconnect(gainNode)
@@ -96,7 +113,7 @@ function reducer(state, action) {
         case 'TOGGLED_RECORD':
             switch (recState) {
                 case 'STOPPED':
-                    recorder.start(500)  // save to recordedChunks every 500ms
+                    recorder.start(500)  // push to recordedChunks every 500ms
                     newState = { recState: 'RECORDING', recordDurationSec: 0 }
                     break
                 case 'PAUSED':
@@ -112,13 +129,7 @@ function reducer(state, action) {
         case 'PRESSED_STOP':
             if (recState !== 'RECORDING' && recState !== 'PAUSED') break
             recorder.stop()
-            newState = {
-                recState: 'STOPPED',
-                recordedBlob: new Blob(
-                    recordedChunks, { type: 'audio/' + data.audioFormat }
-                )
-            }
-            recordedChunks = []
+            newState = { recState: 'STOPPED' }
             break
         case 'TOGGLED_MONITOR':
             const MUTE_RAMP_SEC = 0.05
@@ -140,13 +151,31 @@ function reducer(state, action) {
     }
     const nextState = { ...state, ...newState }
     return nextState
-
 }
 
+// TODO: add support for mp3, etc...
+// must use lib to do mp3 -- encode is not native to browser
+const MIME_TYPES = {
+    // 'mp3': 'audio/mpeg',
+    'webm': 'audio/webm',
+}
 
+/** 
+ * @typedef {Object} AudioTrackConstraints
+ * @prop {ConstrainDOMString?} deviceId
+ * @prop {ConstrainDOMString?} groupId
+ * @prop {ConstrainBoolean?} autoGainControl
+ * @prop {ConstrainULong?} channelCount
+ * @prop {ConstrainBoolean?} echoCancellation
+ * @prop {ConstrainDouble?} latency
+ * @prop {ConstrainBoolean?} noiseSuppression
+ * @prop {ConstrainULong?} sampleRate
+ * @prop {ConstrainULong?} sampleSize
+ * @prop {ConstrainDouble?} volume
+ * @description https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints
+ * */
 
-
-/** @param {{ format: 'mp3' | 'webm' }} */
+/** @param {{ audioFormat: 'webm', audioConstraints: AudioTrackConstraints }} */
 export default function HandRolledRecorder({
     audioFormat = 'webm',
     audioConstraints = {
@@ -156,10 +185,9 @@ export default function HandRolledRecorder({
         noiseSuppression: false,
         channelCount: 1,
     }
-
 }) {
     /** @type {[RecState, React.Dispatch<{ type: AudioActionType, data: Object }>]} */
-    const [state, updateState] = useReducer(reducer,
+    const [state, dispatch] = useReducer(reducer,
         {   // initial state
             recState: 'STOPPED',
             isMicOn: false,
@@ -167,10 +195,17 @@ export default function HandRolledRecorder({
             micStream: null,
             micStreamSrcNode: null,
             meterInputSrcNode: null,
-            recordedBlob: null,
             recordDurationSec: 0,
         }
     )
+
+    if (!audioConstraints) audioConstraints = {
+        autoGainControl: true,
+        voiceIsolation: false,
+        echoCancellation: false,
+        noiseSuppression: false,
+        channelCount: 1,
+    }
 
     const {
         recState,
@@ -179,7 +214,6 @@ export default function HandRolledRecorder({
         micStream,
         micStreamSrcNode,
         meterInputSrcNode,
-        recordedBlob,
         recordDurationSec,
     } = state
     const isRecording = recState === 'RECORDING'
@@ -189,47 +223,26 @@ export default function HandRolledRecorder({
     /** @type {{ current: HTMLAudioElement? }} */
     const audioElem = useRef()
 
-    // if mic is on, set mic stream, 
-    // set mic + meter source nodes, 
-    // init recorder,
-    // else undo these
+    // if mic is on, set mic stream (bc no async in reducer, must be here)
     useEffect(() => {
         (async () => {
             if (isMicOn) {
-                // async code cannot run in reducer(), so do it here
                 if (audioCtx.state === 'suspended') await audioCtx.resume()
                 const micStream = await getMicrophoneStream(audioConstraints)
-                updateState({
+                dispatch({
                     type: "TOGGLED_MIC_STREAM", data: {
-                        micStream, audioFormat, updateState 
+                        micStream, audioFormat, 
+                        dispatch, 
+                        audioElem: audioElem.current
                     }
                 })
             } else {
-                updateState({
+                dispatch({
                     type: "TOGGLED_MIC_STREAM", data: { micStream: null }
                 })
             }
         })()
     }, [isMicOn])
-
-    // update audio elem and auto download recording when recording exists
-    useEffect(() => {
-        if (recordedBlob) {
-            const blobUrl = URL.createObjectURL(recordedBlob)
-            audioElem.current.src = blobUrl
-            // automatically download recorded file on record stop
-            let downloadLink = document.createElement('a')
-            downloadLink.href = blobUrl
-            downloadLink.download = 'recording.' + audioFormat
-            downloadLink.click()
-            downloadLink = undefined  // let GC clean up the link
-        }
-    }, [recordedBlob])
-
-
-    useEffect(() => {
-        console.log('record counter:', recordDurationSec)
-    }, [recordDurationSec])
 
     return (
         <div
@@ -282,7 +295,7 @@ export default function HandRolledRecorder({
             <audio
                 ref={audioElem}
                 style={{
-                    opacity: recordedBlob && isStopped ? 1 : 0,
+                    opacity: isStopped && recordedChunks.length ? 1 : 0,
                     transition: 'opacity 0.5s',
                 }}
                 src=""
@@ -291,20 +304,20 @@ export default function HandRolledRecorder({
         </div>
     )
 
-    async function toggleMicOn() {
-        updateState({ type: 'TOGGLED_MIC' })
+    function toggleMicOn() {
+        dispatch({ type: 'TOGGLED_MIC' })
     }
 
     function toggleRecordPause() {
-        updateState({ type: "TOGGLED_RECORD" })
+        dispatch({ type: "TOGGLED_RECORD" })
     }
 
     function stopRecording() {
-        updateState({ type: "PRESSED_STOP", data: { audioFormat } })
+        dispatch({ type: "PRESSED_STOP", data: { audioFormat } })
     }
 
     function toggleMonitor() {
-        updateState({ type: "TOGGLED_MONITOR" })
+        dispatch({ type: "TOGGLED_MONITOR" })
     }
 }
 
@@ -323,6 +336,3 @@ async function getMicrophoneStream(audioConstraints) {
         console.error(`Try removing constraints. Error: ${error}`)
     }
 }
-
-
-
