@@ -37,7 +37,7 @@ const styles = {
 
 /** @typedef {'STOPPED' | 'RECORDING' | 'PAUSED'} RecState */
 
-/** @typedef {'TOGGLED_MIC' | 'TOGGLED_RECORD' | 'PRESSED_STOP' | 'TOGGLED_MONITOR' | 'TOGGLED_MIC_STREAM'} AudioActionType */
+/** @typedef {'TOGGLED_MIC' | 'TOGGLED_RECORD' | 'PRESSED_STOP' | 'TOGGLED_MONITOR' | 'TOGGLED_MIC_STREAM' | 'REC_COUNTER_TICKED'} AudioActionType */
 
 /** 
  * @param {{ recState: RecState}} state 
@@ -48,20 +48,21 @@ function reducer(state, action) {
         recState,
         isMicOn,
         isMonitoring,
+        micStream,
         micStreamSrcNode,
         meterInputSrcNode,
-        recCounter,
         recordedBlob,
+        recordDurationSec,
     } = state
     const { data } = action
     let newState = {}
     switch (action.type) {
         case 'TOGGLED_MIC':
-            // due to async nature of task, must be in useEffect
+            // due to async nature of task, must be in useEffect(...[isMicOn])
             newState = { isMicOn: !isMicOn }
             break
         case 'TOGGLED_MIC_STREAM':
-            const { micStream, audioFormat } = data
+            const { micStream, audioFormat, updateState } = data
             if (micStream) {
                 newState.micStreamSrcNode =
                     audioCtx.createMediaStreamSource(micStream)
@@ -76,7 +77,7 @@ function reducer(state, action) {
                 }
                 recorder.onstart = recorder.onresume = () => {
                     recInterval = setInterval(() => {
-                        state.recCounter = recCounter + 1
+                        updateState({ type: 'REC_COUNTER_TICKED' })
                     }, 1000)
                 }
                 recorder.onpause = () => clearInterval(recInterval)
@@ -89,11 +90,14 @@ function reducer(state, action) {
                 recorder = null
             }
             break
+        case 'REC_COUNTER_TICKED':
+            newState = { recordDurationSec: recordDurationSec + 1 }
+            break
         case 'TOGGLED_RECORD':
             switch (recState) {
                 case 'STOPPED':
-                    recorder.start(500)
-                    newState = { recState: 'RECORDING' }
+                    recorder.start(500)  // save to recordedChunks every 500ms
+                    newState = { recState: 'RECORDING', recordDurationSec: 0 }
                     break
                 case 'PAUSED':
                     recorder.resume()
@@ -164,12 +168,9 @@ export default function HandRolledRecorder({
             micStreamSrcNode: null,
             meterInputSrcNode: null,
             recordedBlob: null,
-            recCounter: 0,
+            recordDurationSec: 0,
         }
     )
-
-    // const [recCounter, setRecCounter] = useState(0)
-    // const min = recCounter % 60
 
     const {
         recState,
@@ -179,7 +180,7 @@ export default function HandRolledRecorder({
         micStreamSrcNode,
         meterInputSrcNode,
         recordedBlob,
-        recCounter,
+        recordDurationSec,
     } = state
     const isRecording = recState === 'RECORDING'
     const isPaused = recState === 'PAUSED'
@@ -199,7 +200,9 @@ export default function HandRolledRecorder({
                 if (audioCtx.state === 'suspended') await audioCtx.resume()
                 const micStream = await getMicrophoneStream(audioConstraints)
                 updateState({
-                    type: "TOGGLED_MIC_STREAM", data: { micStream, audioFormat }
+                    type: "TOGGLED_MIC_STREAM", data: {
+                        micStream, audioFormat, updateState 
+                    }
                 })
             } else {
                 updateState({
@@ -225,8 +228,8 @@ export default function HandRolledRecorder({
 
 
     useEffect(() => {
-        console.log('recorded blob:', recordedBlob)
-    }, [recordedBlob])
+        console.log('record counter:', recordDurationSec)
+    }, [recordDurationSec])
 
     return (
         <div
@@ -238,7 +241,7 @@ export default function HandRolledRecorder({
                 style={{ margin: 0 }}
             >{isRecording ? 'Recording' : 'Stopped'}</h3>
             <div>
-                {String(Math.floor(recCounter / 60)).padStart(2, 0)}:{String(recCounter % 60).padStart(2, 0)}
+                {String(Math.floor(recordDurationSec / 60)).padStart(2, 0)}:{String(recordDurationSec % 60).padStart(2, 0)}
             </div>
 
             <RecorderControls
