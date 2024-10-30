@@ -163,6 +163,7 @@ export default function VoiceRecorder({
         }
     )
 
+    /** @type {{ recState: RecState, isMicOn: boolean, isMonitoring: boolean, meterInputSrcNode: MediaStreamAudioSourceNode, recordDurationSec: number }} */
     const {
         recState,
         isMicOn,
@@ -171,6 +172,7 @@ export default function VoiceRecorder({
         recordDurationSec,
     } = state
     const isRecording = recState === 'RECORDING'
+    const isPaused = recState === 'PAUSED'
     const isStopped = recState === 'STOPPED'
 
     /** @type {{ current: HTMLAudioElement? }} */
@@ -178,14 +180,40 @@ export default function VoiceRecorder({
 
     return (
         <div
+            className="voice-recorder"
             style={{
                 display: 'flex', flexDirection: 'column', gap: '1rem'
             }}
         >
             <h3
-                style={{ margin: 0 }}
-            >{isRecording ? 'Recording' : 'Stopped'}</h3>
-            <div>
+                style={{
+                    margin: 0,
+                    animation: isRecording 
+                        ? 'pulsate-text ease-out 2s infinite'
+                        : isPaused
+                            ? 'pulsate-text steps(1, end) 1s infinite'
+                            : '',
+                }}
+            >
+                {isRecording
+                    ? 'Recording'
+                    : isPaused
+                        ? 'Recording (Paused)'
+                        : 'Stopped'}
+            </h3>
+            <div
+                id="record-duration"
+                style={{
+                    fontSize: '1.15rem',
+                    color: isRecording ? 'red' : '',
+                    textShadow: isRecording ? '0 0.1rem 0 black' : '',
+                    animation: isRecording
+                        ? 'pulsate-text ease-out 2s infinite'
+                        : isPaused
+                            ? 'pulsate-text steps(1, end) 1s infinite'
+                            : '',
+                }}
+            >
                 {String(Math.floor(recordDurationSec / 60)).padStart(2, 0)}:{String(recordDurationSec % 60).padStart(2, 0)}
             </div>
 
@@ -201,11 +229,7 @@ export default function VoiceRecorder({
 
             <div
                 id="meter-container"
-                style={{
-                    margin: '-5px',
-                    outline: isRecording && '2px solid red',
-                    animation: isRecording && 'pulsate ease-out 2s infinite'
-                }}
+                style={{ margin: '-5px' }}
             >
                 {meterInputSrcNode &&  // render a working meter
                     <Peakmeter

@@ -8,3 +8,12 @@
 		outline-color: red;
 	}
 }
+
+@keyframes pulsate-text {
+	0%, 100% {
+		color: darkred;
+	}
+	50% {
+		color: red;
+	}
+}

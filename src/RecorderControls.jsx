@@ -44,7 +44,7 @@ export default function RecorderControls({
 /** @param {{ state: RecState }} */
 function MicOnButton({ onClick }) {
     const { state, isMicOn } = useContext(AudioControlsCtx)
-    const style =  { background: isMicOn ? 'goldenrod' : 'black' }
+    const style = { background: isMicOn ? 'green' : 'black' }
     return (
         <AudioControl
             type="MIC_ON"
@@ -61,7 +61,14 @@ function MicOnButton({ onClick }) {
 /** @param {{ state: RecState }} */
 function RecordPauseButton({ onClick }) {
     const { state, isMicOn } = useContext(AudioControlsCtx)
-    const style = { background: 'red' }
+    const style = {
+        background: isMicOn ? 'red' : 'black',
+        animation: state === 'RECORDING'
+            ? 'pulsate ease-out 2s infinite'
+            : state === 'PAUSED'
+                ? 'pulsate steps(1, end) 1s infinite'
+                : ''
+    }
     return (
         <AudioControl
             type={state === "RECORDING" ? "PAUSE" : "RECORD"}
