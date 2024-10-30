@@ -1,6 +1,5 @@
 import './RecorderControls.css'
 
-// import micIcon from './assets/mic.fill 2.svg'
 import micIcon from './assets/mic.white.svg'
 import recordIcon from './assets/record.white.svg'
 import pauseIcon from './assets/pause.white.svg'
@@ -9,12 +8,9 @@ import monitorIcon from './assets/headphones.white.svg'
 import { createContext } from 'react'
 import { useContext } from 'react'
 
-/** 
- * @typedef {'STOPPED' | 'RECORDING' | 'PAUSED' } RecState
- */
-/** 
- * @typedef {'RECORD' | 'STOP' | 'PAUSE' | 'MIC_ON' | 'MONITOR' } ButtonType
- */
+/** @typedef {import('./types').RecState} RecState */
+/** @typedef {import('./types').AudioActionType} AudioActionType */
+/** @typedef {import('./types').RecorderControlsProps} RecorderControlsProps */
 
 const AudioControlsCtx = createContext()
 

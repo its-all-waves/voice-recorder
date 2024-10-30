@@ -5,6 +5,9 @@ import RecorderControls from './RecorderControls'
 
 import './VoiceRecorder.css'
 
+/** @typedef {import('./types').RecState} RecState */
+/** @typedef {import('./types').AudioActionType} AudioActionType */
+
 const audioCtx = new AudioContext()
 const output = audioCtx.destination
 
@@ -16,10 +19,6 @@ gainNode.connect(output)
 let recorder = null
 let recordedChunks = []
 let recInterval = null
-
-/** @typedef {'STOPPED' | 'RECORDING' | 'PAUSED'} RecState */
-
-/** @typedef {'TOGGLED_MIC' | 'TOGGLED_RECORD_PAUSE' | 'PRESSED_STOP' | 'TOGGLED_MONITOR' | 'REC_COUNTER_TICKED'} AudioActionType */
 
 /** 
  * @param {{ recState: RecState}} state 
@@ -74,7 +73,7 @@ function reducer(state, action) {
                 recorder.onpause = () => clearInterval(recInterval)
                 recorder.onstop = () => {
                     clearInterval(recInterval)
-                    const blobUrl = URL.createObjectURL(new Blob(recordedChunks, { type: "" }))
+                    const blobUrl = URL.createObjectURL(new Blob(recordedChunks, { type: MIME_TYPES[data.audioFormat] }))
                     audioElem.src = blobUrl
                     // automatically download recorded file on record stop
                     let downloadLink = document.createElement('a')
@@ -139,20 +138,7 @@ const MIME_TYPES = {
     'webm': 'audio/webm',
 }
 
-/** 
- * @typedef {Object} AudioTrackConstraints
- * @prop {ConstrainDOMString?} deviceId
- * @prop {ConstrainDOMString?} groupId
- * @prop {ConstrainBoolean?} autoGainControl
- * @prop {ConstrainULong?} channelCount
- * @prop {ConstrainBoolean?} echoCancellation
- * @prop {ConstrainDouble?} latency
- * @prop {ConstrainBoolean?} noiseSuppression
- * @prop {ConstrainULong?} sampleRate
- * @prop {ConstrainULong?} sampleSize
- * @prop {ConstrainDouble?} volume
- * @description https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints
- * */
+/** @typedef {import('./types').AudioTrackConstraints} AudioTrackConstraints */
 
 /** @param {{ audioFormat: 'webm', audioConstraints: AudioTrackConstraints }} */
 export default function VoiceRecorder({
