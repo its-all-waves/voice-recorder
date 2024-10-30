@@ -14,9 +14,6 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
-      web-audio-peak-meter:
-        specifier: ^3.1.0
-        version: 3.1.0
       web-audio-peakmeter-react:
         specifier: ^0.1.0
         version: 0.1.0
@@ -1250,9 +1247,6 @@ packages:
         optional: true
       terser:
         optional: true
-
-  web-audio-peak-meter@3.1.0:
-    resolution: {integrity: sha512-tbkisRtdevw9Yw7yEIFaOpYQOIDsEYfjgABYH0wv3+ajHB8SaUTXR1kUXJ6+OQP7AUuYSIX1tPQrnZCK1nzB6A==}
 
   web-audio-peakmeter-react@0.1.0:
     resolution: {integrity: sha512-1ulClpwv960jONSV3ENYZlMLh/Z08nmVtE9csvBAY0rVmwmGHmu6uf483EmBMoQT4pR4HAh0Cl4DtmaZ3Ix6Fg==}
@@ -2616,8 +2610,6 @@ snapshots:
       rollup: 4.24.0
     optionalDependencies:
       fsevents: 2.3.3
-
-  web-audio-peak-meter@3.1.0: {}
 
   web-audio-peakmeter-react@0.1.0: {}
 
