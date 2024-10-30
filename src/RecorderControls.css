@@ -7,10 +7,11 @@
 		position: relative;
 		border: none;
 		border-radius: 50%;
-		width: 6ch;
-		height: 6ch;
+		width: 8ch;
+		height: 8ch;
 		background: black;
 		filter: drop-shadow(0rem var(--btn-shadow-height) 0rem black);
+		cursor: pointer;
 	
 		img {
 			position: absolute;
