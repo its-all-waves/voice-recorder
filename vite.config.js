@@ -12,12 +12,11 @@ export default defineConfig({
       formats: ['es', 'umd']
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'web-audio-peakmeter-react'],
+      external: ['react', 'react-dom'],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDom',
-          'web-audio-peakmeter-react': 'Peakmeter',
         }
       }
     }
