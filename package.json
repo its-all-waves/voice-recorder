@@ -1,7 +1,7 @@
 {
   "name": "@its-all-waves/voice-recorder-react",
   "description": "A voice recorder for audio engineers.",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "main": "./src/VoiceRecorder.jsx",
   "scripts": {
