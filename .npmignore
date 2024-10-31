@@ -1,0 +1,6 @@
+# Ignore development files
+dev/
+*.log
+.git/
+.gitignore
+node_modules/

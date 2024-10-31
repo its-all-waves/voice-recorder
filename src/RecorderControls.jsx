@@ -1,10 +1,10 @@
 import './RecorderControls.css'
 
-import micIcon from './assets/mic.white.svg'
-import recordIcon from './assets/record.white.svg'
-import pauseIcon from './assets/pause.white.svg'
-import stopIcon from './assets/stop.white.svg'
-import monitorIcon from './assets/headphones.white.svg'
+import micIcon from '../src/assets/RecorderControls/mic.white.svg'
+import recordIcon from '../src/assets/RecorderControls/record.white.svg'
+import pauseIcon from '../src/assets/RecorderControls/pause.white.svg'
+import stopIcon from '../src/assets/RecorderControls/stop.white.svg'
+import monitorIcon from '../src/assets/RecorderControls/headphones.white.svg'
 import { createContext } from 'react'
 import { useContext } from 'react'
 
