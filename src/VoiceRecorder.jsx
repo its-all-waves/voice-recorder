@@ -1,24 +1,13 @@
-import React, { useRef, useReducer } from 'react'
+import React, { useRef, useReducer, useEffect } from 'react'
 import Peakmeter from 'web-audio-peakmeter-react'
+import './VoiceRecorder.css'
+
+import { recManager } from './RecManager'
 
 import RecorderControls from './RecorderControls'
 
-import './VoiceRecorder.css'
-
 /** @typedef {import('./types').RecState} RecState */
 /** @typedef {import('./types').AudioActionType} AudioActionType */
-
-const audioCtx = new AudioContext()
-const output = audioCtx.destination
-
-const gainNode = audioCtx.createGain()
-gainNode.gain.value = 0
-gainNode.connect(output)
-
-/** @type {MediaRecorder?} */
-let recorder = null
-let recordedChunks = []
-let recInterval = null
 
 /** 
  * @param {{ recState: RecState}} state 
@@ -38,42 +27,48 @@ function reducer(state, action) {
         case 'TOGGLED_MIC':
             const { micStream, audioFormat, dispatch, audioElem } = data
             if (isMicOn) {
-                micStreamSrcNode?.disconnect(gainNode)
+                micStreamSrcNode?.disconnect(recManager.gainNode)
                 newState.micStreamSrcNode = null
                 newState.meterInputSrcNode = null
-                recorder = null
+                recManager.recorder = null
             } else {
                 newState.micStreamSrcNode =
-                    audioCtx.createMediaStreamSource(micStream)
+                    recManager.audioCtx.createMediaStreamSource(micStream)
                 // -> gainNode -> audioCtx.destination
-                newState.micStreamSrcNode.connect(gainNode)
+                newState.micStreamSrcNode.connect(recManager.gainNode)
                 // use a separate audio stream source for the mic meter
                 // so we can mute output and mic meter will still work
                 // -> meter input -> meter
                 newState.meterInputSrcNode =
-                    audioCtx.createMediaStreamSource(micStream)
+                    recManager.audioCtx.createMediaStreamSource(micStream)
                 // init recorder
-                recorder = new MediaRecorder(
+                recManager.recorder = new MediaRecorder(
                     micStream, { mimeType: MIME_TYPES[audioFormat] }
                 )
-                recorder.ondataavailable = (event) => {
-                    recordedChunks.push(event.data)
+                recManager.recorder.ondataavailable = (event) => {
+                    recManager.recordedChunks.push(event.data)
                 }
-                recorder.onstart = () => {
-                    recordedChunks = []
-                    recInterval = setInterval(() => {
+                recManager.recorder.onstart = () => {
+                    recManager.recordedChunks = []
+                    recManager.recInterval = setInterval(() => {
                         dispatch({ type: 'REC_COUNTER_TICKED' })
                     }, 1000)
                 }
-                recorder.onresume = () => {
-                    recInterval = setInterval(() => {
+                recManager.recorder.onresume = () => {
+                    recManager.recInterval = setInterval(() => {
                         dispatch({ type: 'REC_COUNTER_TICKED' })
                     }, 1000)
                 }
-                recorder.onpause = () => clearInterval(recInterval)
-                recorder.onstop = () => {
-                    clearInterval(recInterval)
-                    const blobUrl = URL.createObjectURL(new Blob(recordedChunks, { type: MIME_TYPES[data.audioFormat] }))
+                recManager.recorder.onpause =
+                    () => clearInterval(recManager.recInterval)
+                recManager.recorder.onstop = () => {
+                    clearInterval(recManager.recInterval)
+                    const blobUrl = URL.createObjectURL(
+                        new Blob(
+                            recManager.recordedChunks,
+                            { type: MIME_TYPES[data.audioFormat] }
+                        )
+                    )
                     audioElem.src = blobUrl
                     // automatically download recorded file on record stop
                     let downloadLink = document.createElement('a')
@@ -91,37 +86,38 @@ function reducer(state, action) {
         case 'TOGGLED_RECORD_PAUSE':
             switch (recState) {
                 case 'STOPPED':
-                    recorder.start(500)  // push to recordedChunks every 500ms
+                    // push to recordedChunks every 500ms
+                    recManager.recorder.start(500)
                     newState = { recState: 'RECORDING', recordDurationSec: 0 }
                     break
                 case 'PAUSED':
-                    recorder.resume()
+                    recManager.recorder.resume()
                     newState = { recState: 'RECORDING' }
                     break
                 case 'RECORDING':
-                    recorder.pause()
+                    recManager.recorder.pause()
                     newState = { recState: 'PAUSED' }
                     break
             }
             break
         case 'PRESSED_STOP':
             if (recState !== 'RECORDING' && recState !== 'PAUSED') break
-            recorder.stop()
+            recManager.recorder.stop()
             newState = { recState: 'STOPPED' }
             break
         case 'TOGGLED_MONITOR':
             const MUTE_RAMP_SEC = 0.05
             const UNMUTE_RAMP_SEC = MUTE_RAMP_SEC
-            if (gainNode.gain.value === 0) {
-                gainNode.gain.linearRampToValueAtTime(
-                    1, audioCtx.currentTime + UNMUTE_RAMP_SEC
+            if (recManager.gainNode.gain.value === 0) {
+                recManager.gainNode.gain.linearRampToValueAtTime(
+                    1, recManager.audioCtx.currentTime + UNMUTE_RAMP_SEC
                 )
             } else {
-                gainNode.gain.linearRampToValueAtTime(
-                    0.00000001, audioCtx.currentTime + MUTE_RAMP_SEC
+                recManager.gainNode.gain.linearRampToValueAtTime(
+                    0.00000001, recManager.audioCtx.currentTime + MUTE_RAMP_SEC
                 )
-                gainNode.gain.setValueAtTime(
-                    0, audioCtx.currentTime + MUTE_RAMP_SEC + 0.01
+                recManager.gainNode.gain.setValueAtTime(
+                    0, recManager.audioCtx.currentTime + MUTE_RAMP_SEC + 0.01
                 )
             }
             newState = { isMonitoring: !isMonitoring }
@@ -181,14 +177,12 @@ export default function VoiceRecorder({
     return (
         <div
             className="voice-recorder"
-            style={{
-                display: 'flex', flexDirection: 'column', gap: '1rem'
-            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
         >
             <h3
                 style={{
                     margin: 0,
-                    animation: isRecording 
+                    animation: isRecording
                         ? 'pulsate-text ease-out 2s infinite'
                         : isPaused
                             ? 'pulsate-text steps(1, end) 1s infinite'
@@ -214,7 +208,8 @@ export default function VoiceRecorder({
                             : '',
                 }}
             >
-                {String(Math.floor(recordDurationSec / 60)).padStart(2, 0)}:{String(recordDurationSec % 60).padStart(2, 0)}
+                {String(Math.floor(recordDurationSec / 60)).padStart(2, 0)}:
+                {String(recordDurationSec % 60).padStart(2, 0)}
             </div>
 
             <RecorderControls
@@ -233,7 +228,7 @@ export default function VoiceRecorder({
             >
                 {meterInputSrcNode &&  // render a working meter
                     <Peakmeter
-                        audioCtx={audioCtx}
+                        audioCtx={recManager.audioCtx}
                         sourceNodes={[meterInputSrcNode]}
                         channels={1}
                     />
@@ -242,8 +237,10 @@ export default function VoiceRecorder({
                 }
                 {!meterInputSrcNode &&  // render an inactive meter
                     <Peakmeter
-                        audioCtx={audioCtx}
-                        sourceNodes={[new ConstantSourceNode(audioCtx)]}
+                        audioCtx={recManager.audioCtx}
+                        sourceNodes={
+                            [new ConstantSourceNode(recManager.audioCtx)]
+                        }
                         channels={1}
                     />}
             </div>
@@ -251,7 +248,8 @@ export default function VoiceRecorder({
             <audio
                 ref={audioElem}
                 style={{
-                    opacity: isStopped && recordedChunks.length ? 1 : 0,
+                    opacity: isStopped && 
+                        recManager.recordedChunks.length ? 1 : 0,
                     transition: 'opacity 0.5s',
                 }}
                 src=""
@@ -261,8 +259,12 @@ export default function VoiceRecorder({
     )
 
     async function toggleMicOn() {
-        if (audioCtx.state === 'suspended') await audioCtx.resume()
-        const micStream = isMicOn ? null : await getMicrophoneStream(audioConstraints)
+        if (recManager.audioCtx.state === 'suspended') {
+            await recManager.audioCtx.resume()
+        }
+        const micStream = isMicOn 
+            ? null 
+            : await getMicrophoneStream(audioConstraints)
         dispatch({
             type: "TOGGLED_MIC",
             data: {
