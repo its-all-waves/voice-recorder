@@ -13,7 +13,7 @@ class RecManager {
 		this.recorder = null
 
 		this.recordedChunks = []
-		this.recInterval = null
+		this.recCounterInterval = null
 
 		// get supported constraints and audio io
 		this.supportedConstraints =
