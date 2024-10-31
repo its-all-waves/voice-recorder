@@ -9,3 +9,4 @@ A voice recorder for audio engineers.
 - [x] Pause recording
 - [x] Automagically save the file to downloads on record stop
 - [ ] Customizable CSS
+- [ ] Specify recording format (wav/mp3/webm/etc)
