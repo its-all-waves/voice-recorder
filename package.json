@@ -3,7 +3,8 @@
   "description": "A voice recorder for audio engineers.",
   "version": "0.5.2",
   "type": "module",
-  "main": "./src/VoiceRecorder.jsx",
+  "main": "./dist/voice-recorder.umd.cjs",
+  "module": "./dist/voice-recorder.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
