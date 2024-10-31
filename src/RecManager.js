@@ -1,5 +1,9 @@
-// no async in a constructor -- do it outside the class
-const [audioInputs, audioOutputs] = await getAudioIOOptions()
+let audioInputs, audioOutputs
+getAudioIOOptions().then(io => {
+	const [inputs, outputs] = io
+	audioInputs = inputs
+	audioOutputs = outputs
+})
 
 /** Hold all Web Audio API and recording-related entities. */
 class RecManager {

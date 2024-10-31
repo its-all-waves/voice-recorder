@@ -1,4 +1,4 @@
-import React, { useRef, useReducer, useEffect } from 'react'
+import React, { useRef, useReducer } from 'react'
 import Peakmeter from 'web-audio-peakmeter-react'
 import './VoiceRecorder.css'
 
