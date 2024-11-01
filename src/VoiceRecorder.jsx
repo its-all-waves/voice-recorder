@@ -1,4 +1,4 @@
-import React, { useRef, useReducer } from 'react'
+import React, { useRef, useReducer, useEffect } from 'react'
 import Peakmeter from 'web-audio-peakmeter-react'
 import './VoiceRecorder.css'
 
@@ -11,7 +11,7 @@ import RecorderControls from './RecorderControls'
 /** @typedef {import('./types').AudioActionType} AudioActionType */
 /** @typedef {import('./types').AudioTrackConstraints} AudioTrackConstraints */
 
-/** @param {{ audioFormat: 'webm', audioConstraints: AudioTrackConstraints }} */
+/** @param {{ audioFormat: 'webm', audioConstraints: AudioTrackConstraints, onStateChange: (recState: RecState, recordedChunks: Blob[]) => void }} */
 export default function VoiceRecorder({
     audioFormat = 'webm',
     audioConstraints = {
@@ -20,7 +20,8 @@ export default function VoiceRecorder({
         echoCancellation: false,
         noiseSuppression: false,
         channelCount: 1,
-    }
+    },
+    onStateChange,
 }) {
     /** @type {[RecState, React.Dispatch<{ type: AudioActionType, data: Object }>]} */
     const [state, dispatch] = useReducer(reducer,
@@ -48,6 +49,10 @@ export default function VoiceRecorder({
 
     /** @type {{ current: HTMLAudioElement? }} */
     const audioElem = useRef()
+
+    useEffect(() => {
+        onStateChange && onStateChange(recState, recManager.recordedChunks)
+    }, [recState])
 
     return (
         <div
@@ -156,7 +161,10 @@ export default function VoiceRecorder({
     }
 
     function stopRecording() {
-        dispatch({ type: "PRESSED_STOP", data: { audioFormat } })
+        dispatch({
+            type: "PRESSED_STOP", 
+            data: { audioFormat, audioElem: audioElem.current } 
+        })
     }
 
     function toggleMonitor() {
