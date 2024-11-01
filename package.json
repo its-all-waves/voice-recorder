@@ -6,7 +6,7 @@
   "main": "./dist/voice-recorder.umd.cjs",
   "module": "./dist/voice-recorder.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite dev --port 5174",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -17,13 +17,13 @@
     "web-audio-peakmeter-react": "^0.1.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.11.1",
-    "@vitejs/plugin-react": "^4.3.2",
-    "eslint": "^9.11.1",
-    "eslint-plugin-react": "^7.37.0",
-    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
-    "eslint-plugin-react-refresh": "^0.4.12",
-    "globals": "^15.9.0",
-    "vite": "^5.4.8"
+    "@eslint/js": "^9.13.0",
+    "@vitejs/plugin-react": "^4.3.3",
+    "eslint": "^9.13.0",
+    "eslint-plugin-react": "^7.37.1",
+    "eslint-plugin-react-hooks": "5.1.0-rc-fb9a90fa48-20240614",
+    "eslint-plugin-react-refresh": "^0.4.13",
+    "globals": "^15.11.0",
+    "vite": "^5.4.9"
   }
 }

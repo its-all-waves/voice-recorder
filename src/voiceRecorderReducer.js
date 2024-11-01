@@ -50,7 +50,6 @@ export function reducer(state, action) {
                     recManager.recordedChunks.push(event.data)
                 }
                 recManager.recorder.onstart = () => {
-                    recManager.recordedChunks = []
                     recManager.recCounterInterval = setInterval(() => {
                         dispatch({ type: 'REC_COUNTER_TICKED' })
                     }, 1000)
@@ -87,7 +86,8 @@ export function reducer(state, action) {
         case 'TOGGLED_RECORD_PAUSE':
             switch (recState) {
                 case 'STOPPED':
-                    // push to recordedChunks every 500ms
+                    recManager.recordedChunks = []
+                    // set recorder to push to recordedChunks every 500ms
                     recManager.recorder.start(500)
                     newState = { recState: 'RECORDING', recordDurationSec: 0 }
                     break
@@ -109,17 +109,21 @@ export function reducer(state, action) {
         case 'TOGGLED_MONITOR':
             const MUTE_RAMP_SEC = 0.05
             const UNMUTE_RAMP_SEC = MUTE_RAMP_SEC
-            if (recManager.gainNode.gain.value === 0) {
-                recManager.gainNode.gain.linearRampToValueAtTime(
-                    1, recManager.audioCtx.currentTime + UNMUTE_RAMP_SEC
-                )
-            } else {
+            debugger
+            // if (recManager.gainNode.gain.value === 0) {
+            if (isMonitoring) {
                 recManager.gainNode.gain.linearRampToValueAtTime(
                     0.00000001, recManager.audioCtx.currentTime + MUTE_RAMP_SEC
                 )
                 recManager.gainNode.gain.setValueAtTime(
                     0, recManager.audioCtx.currentTime + MUTE_RAMP_SEC + 0.01
                 )
+                // newState = { isMonitoring: false }
+            } else {
+                recManager.gainNode.gain.linearRampToValueAtTime(
+                    1, recManager.audioCtx.currentTime + UNMUTE_RAMP_SEC
+                )
+                // newState = { isMonitoring: true }
             }
             newState = { isMonitoring: !isMonitoring }
             break
