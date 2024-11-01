@@ -84,6 +84,7 @@ export function reducer(state, action) {
             if (recState !== 'RECORDING' && recState !== 'PAUSED') break
             recManager.recorder.stop()
             newState = { recState: 'STOPPED' }
+            // automatically download recorded file on record stop
             const blobUrl = URL.createObjectURL(
                 new Blob(
                     recManager.recordedChunks,
@@ -92,7 +93,6 @@ export function reducer(state, action) {
             )
             const { audioElem } = data
             audioElem.src = blobUrl
-            // automatically download recorded file on record stop
             let downloadLink = document.createElement('a')
             downloadLink.href = blobUrl
             downloadLink.download = 'recording.' + data.audioFormat

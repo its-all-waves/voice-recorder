@@ -5,6 +5,7 @@
   "type": "module",
   "main": "./dist/voice-recorder.umd.cjs",
   "module": "./dist/voice-recorder.js",
+  "types": "src/types.d.ts",
   "scripts": {
     "dev": "vite dev --port 5174",
     "build": "vite build",
@@ -12,9 +13,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "web-audio-peakmeter-react": "^0.1.0"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
