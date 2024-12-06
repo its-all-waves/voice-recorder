@@ -4,7 +4,7 @@
   "version": "0.6.0",
   "type": "module",
   "main": "./dist/voice-recorder.umd.cjs",
-  "module": "./dist/voice-recorder.js",
+  "module": "src/VoiceRecorder.jsx",
   "types": "src/types.d.ts",
   "scripts": {
     "dev": "vite dev --port 5174",

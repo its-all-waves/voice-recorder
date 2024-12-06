@@ -10,11 +10,11 @@ import { useContext } from 'react'
 
 /** @typedef {import('./types').RecState} RecState */
 /** @typedef {import('./types').AudioActionType} AudioActionType */
-/** @typedef {import('./types').RecorderControlsProps} RecorderControlsProps */
+/** @typedef {import('./types').RecorderControlProps} RecorderControlProps */
 
 const AudioControlsCtx = createContext()
 
-/** @param {{ recState: RecState, isMonitoring: boolean, isMicOn: boolean, onClickMic: VoidFunction, onClickRecord: VoidFunction, onClickStop: VoidFunction, onClickMonitor: VoidFunction }} */
+/** @param {RecorderControlProps}} */
 export default function RecorderControls({
     recState = 'STOPPED',
     isMonitoring = false,

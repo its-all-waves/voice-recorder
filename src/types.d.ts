@@ -23,7 +23,7 @@ export type AudioTrackConstraints = {
     volume?: ConstrainDouble;
   };
 
-export type RecorderControlsProps = {
+export type RecorderControlProps = {
     recState: RecState, 
     isMonitoring: boolean, 
     isMicOn: boolean, 

@@ -35,6 +35,14 @@ export default function VoiceRecorder({
         }
     )
 
+    // TODO: FIX: record no longer clears counter
+
+    // TODO: expose recCounter
+    
+    // TODO: expose a scale factor as a prob and use it to scale (css)
+
+    // TODO: add prop: micOnOnMount
+
     /** @type {{ recState: RecState, isMicOn: boolean, isMonitoring: boolean, meterInputSrcNode: MediaStreamAudioSourceNode, recordDurationSec: number }} */
     const {
         recState,
@@ -57,30 +65,24 @@ export default function VoiceRecorder({
     return (
         <div
             className="voice-recorder"
-            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            style={{
+                textAlign: 'center',
+                maxWidth: '50ch',
+                display: 'flex',
+                flexDirection: 'column',
+                flexWrap: 'nowrap',
+                gap: '1rem',
+                marginInline: 'auto',
+                padding: '1rem',
+            }}
         >
-            <h3
-                style={{
-                    margin: 0,
-                    animation: isRecording
-                        ? 'pulsate-text ease-out 2s infinite'
-                        : isPaused
-                            ? 'pulsate-text steps(1, end) 1s infinite'
-                            : '',
-                }}
-            >
-                {isRecording
-                    ? 'Recording'
-                    : isPaused
-                        ? 'Recording (Paused)'
-                        : 'Stopped'}
-            </h3>
-            <div
+            <span
                 id="record-duration"
                 style={{
-                    fontSize: '1.15rem',
+                    marginTop: '-.7rem',
+                    marginBottom: '-.7rem',
+                    fontSize: '2rem',
                     color: isRecording ? 'red' : '',
-                    textShadow: isRecording ? '0 0.1rem 0 black' : '',
                     animation: isRecording
                         ? 'pulsate-text ease-out 2s infinite'
                         : isPaused
@@ -90,7 +92,7 @@ export default function VoiceRecorder({
             >
                 {String(Math.floor(recordDurationSec / 60)).padStart(2, 0)}:
                 {String(recordDurationSec % 60).padStart(2, 0)}
-            </div>
+            </span>
 
             <RecorderControls
                 recState={recState}
@@ -104,7 +106,7 @@ export default function VoiceRecorder({
 
             <div
                 id="meter-container"
-                style={{ margin: '-5px' }}
+                style={{ marginInline: '0.5rem' }}
             >
                 {meterInputSrcNode &&  // render a working meter
                     <Peakmeter
@@ -125,7 +127,7 @@ export default function VoiceRecorder({
                     />}
             </div>
 
-            <audio
+            {/* <audio
                 ref={audioElem}
                 style={{
                     opacity: isStopped && 
@@ -134,7 +136,7 @@ export default function VoiceRecorder({
                 }}
                 src=""
                 controls
-            />
+            /> */}
         </div>
     )
 

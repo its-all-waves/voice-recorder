@@ -1,24 +1,23 @@
 .recorder-controls {
-	display: flex;
-	gap: 1rem;
+	text-wrap: nowrap;  /* prevent buttons from wrapping */
 
 	button {
 		--btn-shadow-height: 0.2rem;
 		position: relative;
+		margin-inline: 0.33rem;
 		border: none;
 		border-radius: 50%;
-		width: 8ch;
-		height: 8ch;
+		width: 5ch;
+		height: 5ch;
 		background: black;
 		filter: drop-shadow(0rem var(--btn-shadow-height) 0rem black);
 		cursor: pointer;
-	
+
 		img {
 			position: absolute;
 			top: 50%;
 			left: 50%;
 			transform: translate(-50%, -50%);
-			filter: drop-shadow(0 0.1rem 0 black);
 		}
 	}
 	
@@ -33,6 +32,8 @@
 	}
 	button:disabled,
 	button:disabled:active {
+		transform: translateY(calc(var(--btn-shadow-height)));
+		filter: none;
 		img {
 			filter: none;
 		}
@@ -43,11 +44,9 @@
 		border: none;
 		outline: none;
 	}
-	
+
 	button:active {
 		filter: none;
 		transform: translateY(var(--btn-shadow-height));
 	}
-	
 }
-

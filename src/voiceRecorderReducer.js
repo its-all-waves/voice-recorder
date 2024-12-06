@@ -11,7 +11,7 @@ export const MIME_TYPES = {
 }
 
 /** 
- * @param {{ recState: RecState}} state 
+ * @param {{ recState: RecState }} state 
  * @param {{ type: AudioActionType, data: Object }} action
  * */
 export function reducer(state, action) {
@@ -91,13 +91,13 @@ export function reducer(state, action) {
                     { type: MIME_TYPES[data.audioFormat] }
                 )
             )
-            const { audioElem } = data
-            audioElem.src = blobUrl
-            let downloadLink = document.createElement('a')
-            downloadLink.href = blobUrl
-            downloadLink.download = 'recording.' + data.audioFormat
-            downloadLink.click()
-            downloadLink = undefined  // let GC clean up the link
+            // const { audioElem } = data
+            // audioElem.src = blobUrl
+            // let downloadLink = document.createElement('a')
+            // downloadLink.href = blobUrl
+            // downloadLink.download = 'recording.' + data.audioFormat
+            // downloadLink.click()
+            // downloadLink = undefined  // let GC clean up the link
             break
         case 'TOGGLED_MONITOR':
             const MUTE_RAMP_SEC = 0.05
