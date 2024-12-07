@@ -11,7 +11,8 @@ export default defineConfig({
     lib: {
       entry: './src/VoiceRecorder.jsx',
       name: 'VoiceRecorder',
-      fileName: 'voice-recorder',
+      // fileName: 'voice-recorder',
+      fileName: 'voice-recorder.umd.js',
       formats: ['es', 'umd']
     },
     rollupOptions: {
