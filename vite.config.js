@@ -2,9 +2,14 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import commonjs from '@rollup/plugin-commonjs';
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react({ jsxRuntime: 'automatic' }), commonjs()],
+  plugins: [
+    react({ jsxRuntime: 'automatic' }), 
+    commonjs({
+      transformMixedEsModules: true,
+      include: /node_modules/
+    })
+  ],
   server: {
     open: 'dev/index.html',
   },
@@ -16,11 +21,11 @@ export default defineConfig({
       formats: ['es', 'umd']
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'web-audio-peakmeter-react'],
+      external: ['react', 'react-dom'],
       output: {
         globals: {
           react: 'React',
-          'react-dom': 'ReactDom',
+          'react-dom': 'ReactDOM',
         }
       }
     }
