@@ -7,6 +7,10 @@ export default defineConfig({
   server: {
     open: 'dev/index.html',
   },
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+    mainFields: ['module', 'main', 'browser']
+  },
   build: {
     lib: {
       entry: './src/VoiceRecorder.jsx',
@@ -24,10 +28,12 @@ export default defineConfig({
       }
     },
     commonjsOptions: {
-      transformMixedEsModules: true,
+      include: [/web-audio-peakmeter-react/],
+      defaultIsModuleExports: true,
+      transformMixedEsModules: true
     }
   },
   optimizeDeps: {
-    include: ['web-audio-peakmeter-react'],
-  },
+    include: ['web-audio-peakmeter-react']
+  }
 })
