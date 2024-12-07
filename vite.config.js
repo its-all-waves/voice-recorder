@@ -4,9 +4,9 @@ import commonjs from '@rollup/plugin-commonjs';
 
 export default defineConfig({
   plugins: [
-    react(), 
+    react(),
     commonjs({
-      transformMixedEsModules: true,
+      requireReturnsDefault: true,
       include: /node_modules/
     })
   ],
@@ -18,20 +18,13 @@ export default defineConfig({
       formats: ['es', 'umd']
     },
     rollupOptions: {
-      external: [
-        'react', 
-        'react-dom', 
-        'react/jsx-runtime',
-        'web-audio-peakmeter-react'
-      ],
+      external: ['react', 'react-dom'],
       output: {
         globals: {
           react: 'React',
-          'react-dom': 'ReactDOM',
-          'react/jsx-runtime': 'React',
-          'web-audio-peakmeter-react': 'Peakmeter'
+          'react-dom': 'ReactDOM'
         }
       }
     }
-  },
+  }
 });
