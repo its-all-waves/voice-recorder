@@ -4,15 +4,12 @@ import commonjs from '@rollup/plugin-commonjs';
 
 export default defineConfig({
   plugins: [
-    react({ jsxRuntime: 'automatic' }), 
+    react(), 
     commonjs({
       transformMixedEsModules: true,
       include: /node_modules/
     })
   ],
-  server: {
-    open: 'dev/index.html',
-  },
   build: {
     lib: {
       entry: './src/VoiceRecorder.jsx',
@@ -21,11 +18,18 @@ export default defineConfig({
       formats: ['es', 'umd']
     },
     rollupOptions: {
-      external: ['react', 'react-dom'],
+      external: [
+        'react', 
+        'react-dom', 
+        'react/jsx-runtime',
+        'web-audio-peakmeter-react'
+      ],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
+          'react/jsx-runtime': 'React',
+          'web-audio-peakmeter-react': 'Peakmeter'
         }
       }
     }
