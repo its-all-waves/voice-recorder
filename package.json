@@ -1,7 +1,7 @@
 {
   "name": "@its-all-waves/voice-recorder-react",
   "description": "A voice recorder for audio engineers.",
-  "version": "0.6.13",
+  "version": "0.6.1",
   "type": "module",
   "main": "./dist/voice-recorder.umd.cjs",
   "module": "src/VoiceRecorder.jsx",
@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
-    "@rollup/plugin-commonjs": "^28.0.1",
     "@vitejs/plugin-react": "^4.3.3",
     "eslint": "^9.13.0",
     "eslint-plugin-react": "^7.37.1",
