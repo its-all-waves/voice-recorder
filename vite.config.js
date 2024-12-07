@@ -1,16 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react({
-    jsxRuntime: 'classic'  // Add this line inside react plugin config
-  })],
+  plugins: [react()],
   server: {
     open: 'dev/index.html',
-  },
-  resolve: {
-    dedupe: ['react', 'react-dom'],
-    mainFields: ['module', 'main', 'browser']
   },
   build: {
     lib: {
@@ -27,14 +22,6 @@ export default defineConfig({
           'react-dom': 'ReactDom',
         }
       }
-    },
-    commonjsOptions: {
-      include: [/web-audio-peakmeter-react/],
-      defaultIsModuleExports: true,
-      transformMixedEsModules: true
     }
   },
-  optimizeDeps: {
-    include: ['web-audio-peakmeter-react']
-  }
 })

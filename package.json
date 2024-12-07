@@ -10,8 +10,7 @@
     "dev": "vite dev --port 5174",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "prepublishOnly": "npm run build"
+    "preview": "vite preview"
   },
   "dependencies": {
     "web-audio-peakmeter-react": "^0.1.0"
