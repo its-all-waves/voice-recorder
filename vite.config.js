@@ -22,6 +22,12 @@ export default defineConfig({
           'react-dom': 'ReactDom',
         }
       }
+    },
+    commonjsOptions: {
+      transformMixedEsModules: true,
     }
+  },
+  optimizeDeps: {
+    include: ['web-audio-peakmeter-react'],
   },
 })
