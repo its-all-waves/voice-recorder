@@ -10,3 +10,6 @@ A voice recorder for audio engineers.
 - [x] Automagically save the file to downloads on record stop
 - [ ] Customizable CSS
 - [ ] Specify recording format (wav/mp3/webm/etc)
+
+## Thanks
+https://github.com/esonderegger/web-audio-peakmeter-react
